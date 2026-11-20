@@ -25,7 +25,6 @@ services:
   - type: web
     name: recruitment-management-client
     runtime: static
-    plan: free
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
