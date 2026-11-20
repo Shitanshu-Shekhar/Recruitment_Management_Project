@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import { openResumeFile } from '../../api/resume';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import FormInput from '../../components/FormInput';
@@ -183,15 +184,20 @@ const ApplicantProfile = () => {
                     <span className="text-[11px] font-mono text-emerald-700">{resumeUrl}</span>
                   </div>
                 </div>
-                <a
-                  href={`/api/profile/resume-file/${resumeUrl}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await openResumeFile(resumeUrl);
+                    } catch {
+                      toast.error('Could not open this resume. Please upload it again.');
+                    }
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-300 text-emerald-800 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition shadow-sm"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   View File
-                </a>
+                </button>
               </div>
             ) : (
               <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-xs text-amber-800">

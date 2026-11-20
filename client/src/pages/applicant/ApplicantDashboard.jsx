@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { openResumeFile } from '../../api/resume';
 import { useToast } from '../../context/ToastContext';
 import StatusBadge from '../../components/StatusBadge';
 import Spinner from '../../components/Spinner';
@@ -247,16 +248,21 @@ const ApplicantDashboard = () => {
 
             <div>
               <span className="font-bold text-slate-700 block mb-1">Attached Resume</span>
-              <a
-                href={`/api/profile/resume-file/${selectedApp.resumeUrl}`}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await openResumeFile(selectedApp.resumeUrl);
+                  } catch {
+                    toast.error('Could not open this resume. Please ask the applicant to upload it again.');
+                  }
+                }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-medium hover:bg-indigo-100 transition"
               >
                 <FileText className="w-4 h-4" />
                 {selectedApp.resumeUrl}
                 <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              </button>
             </div>
 
             <div>

@@ -1,5 +1,7 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Profile = require('../models/Profile');
 const Application = require('../models/Application');
 const Job = require('../models/Job');
@@ -98,7 +100,25 @@ const uploadResume = async (req, res, next) => {
       });
     }
 
-    const filename = req.file.filename;
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const filename = `resume-${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'resumes'
+    });
+    const uploadStream = bucket.openUploadStream(filename, {
+      contentType: req.file.mimetype,
+      metadata: {
+        ownerId: String(req.user._id),
+        originalName: path.basename(req.file.originalname).replace(/[\r\n]/g, ''),
+        contentType: req.file.mimetype
+      }
+    });
+
+    await new Promise((resolve, reject) => {
+      uploadStream.once('error', reject);
+      uploadStream.once('finish', resolve);
+      uploadStream.end(req.file.buffer);
+    });
 
     // Update applicant profile with latest resume filename
     await Profile.findOneAndUpdate(
@@ -200,18 +220,12 @@ const getResumeFile = async (req, res, next) => {
   try {
     const filename = path.basename(req.params.filename); // prevent directory traversal
     const filePath = path.join(__dirname, '..', 'uploads', 'resumes', filename);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resume file not found on server'
-      });
-    }
+    let authorized = false;
 
     // Check authorization:
     // 1. Admin can access any file
     if (req.user.role === 'admin') {
-      return res.sendFile(filePath);
+      authorized = true;
     }
 
     // 2. Applicant can access if it belongs to their profile or application
@@ -219,9 +233,7 @@ const getResumeFile = async (req, res, next) => {
       const ownProfile = await Profile.findOne({ user: req.user._id, resumeUrl: filename });
       const ownApp = await Application.findOne({ applicant: req.user._id, resumeUrl: filename });
 
-      if (ownProfile || ownApp) {
-        return res.sendFile(filePath);
-      }
+      authorized = Boolean(ownProfile || ownApp);
     }
 
     // 3. Recruiter can access if it was submitted to one of their jobs
@@ -234,15 +246,47 @@ const getResumeFile = async (req, res, next) => {
         resumeUrl: filename
       });
 
-      if (matchingApp) {
-        return res.sendFile(filePath);
-      }
+      authorized = Boolean(matchingApp);
     }
 
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied: You do not have permission to view this resume'
+    if (!authorized) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You do not have permission to view this resume'
+      });
+    }
+
+    // Continue serving files uploaded before GridFS was introduced if they
+    // still exist on the service instance.
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath);
+    }
+
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, {
+      bucketName: 'resumes'
     });
+    const [file] = await bucket.find({ filename }).sort({ uploadDate: -1 }).limit(1).toArray();
+
+    if (!file) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resume file is missing. Please upload the resume again.'
+      });
+    }
+
+    const contentType = file.contentType || file.metadata?.contentType || 'application/octet-stream';
+    const originalName = (file.metadata?.originalName || filename).replace(/[\r\n]/g, '');
+    const disposition = contentType === 'application/pdf' ? 'inline' : 'attachment';
+    res.set({
+      'Content-Type': contentType,
+      'Content-Length': file.length,
+      'Content-Disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(originalName)}`,
+      'Cache-Control': 'private, no-store'
+    });
+
+    const downloadStream = bucket.openDownloadStream(file._id);
+    downloadStream.on('error', next);
+    downloadStream.pipe(res);
   } catch (error) {
     next(error);
   }

@@ -1,27 +1,5 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-
-// Ensure destination directory exists
-const uploadDir = path.join(__dirname, '..', 'uploads', 'resumes');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer disk storage configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate randomized unique filename
-    const ext = path.extname(file.originalname).toLowerCase();
-    const randomHex = crypto.randomBytes(8).toString('hex');
-    const safeFilename = `resume-${Date.now()}-${randomHex}${ext}`;
-    cb(null, safeFilename);
-  }
-});
 
 // File filter: accept only PDF, DOC, DOCX
 const fileFilter = (req, file, cb) => {
@@ -45,7 +23,9 @@ const fileFilter = (req, file, cb) => {
 
 // Maximum file size: 2 MB (2 * 1024 * 1024 bytes)
 const upload = multer({
-  storage: storage,
+  // Keep the small, size-limited file in memory until the controller writes it
+  // to MongoDB GridFS. Render's service filesystem is ephemeral.
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 2 * 1024 * 1024
   },

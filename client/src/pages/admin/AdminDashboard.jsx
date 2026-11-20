@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import { openResumeFile } from '../../api/resume';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import StatusBadge from '../../components/StatusBadge';
@@ -536,15 +537,20 @@ const AdminDashboard = () => {
                           {new Date(a.appliedAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <a
-                            href={`/api/profile/resume-file/${a.resumeUrl}`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await openResumeFile(a.resumeUrl);
+                              } catch {
+                                toast.error('Could not open this resume. The applicant may need to upload it again.');
+                              }
+                            }}
                             className="text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             File
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}

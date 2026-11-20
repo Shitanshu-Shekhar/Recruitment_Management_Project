@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { openResumeFile } from '../../api/resume';
 import { useToast } from '../../context/ToastContext';
 import StatusBadge from '../../components/StatusBadge';
 import Spinner from '../../components/Spinner';
@@ -149,16 +150,21 @@ const JobApplications = () => {
                       {/* Resume Link */}
                       <td className="px-6 py-4">
                         {app.resumeUrl ? (
-                          <a
-                            href={`/api/profile/resume-file/${app.resumeUrl}`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await openResumeFile(app.resumeUrl);
+                              } catch {
+                                toast.error('Could not open this resume. The applicant may need to upload it again.');
+                              }
+                            }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg font-medium transition"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             View Resume
                             <ExternalLink className="w-3 h-3" />
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-slate-400 italic">No resume</span>
                         )}
@@ -284,16 +290,21 @@ const JobApplications = () => {
             <div>
               <span className="font-bold text-slate-700 block mb-1">Verified Resume Document</span>
               {selectedApp.resumeUrl ? (
-                <a
-                  href={`/api/profile/resume-file/${selectedApp.resumeUrl}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await openResumeFile(selectedApp.resumeUrl);
+                    } catch {
+                      toast.error('Could not open this resume. The applicant may need to upload it again.');
+                    }
+                  }}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl font-semibold hover:bg-indigo-100 transition"
                 >
                   <FileText className="w-4 h-4" />
                   {selectedApp.resumeUrl}
                   <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                </button>
               ) : (
                 <span className="text-slate-400 italic">No resume attached</span>
               )}
