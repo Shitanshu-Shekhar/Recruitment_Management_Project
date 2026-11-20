@@ -17,10 +17,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: 1d
       - key: CLIENT_URL
-        fromService:
-          type: web
-          name: recruitment-management-client
-          property: host
+        value: https://recruitment-management-client-ao01.onrender.com
 
   - type: web
     name: recruitment-management-client
@@ -28,9 +25,10 @@ services:
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: recruitment-management-api
-          property: host
+        value: https://recruitment-management-api-ao01.onrender.com
