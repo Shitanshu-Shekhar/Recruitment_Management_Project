@@ -1,0 +1,14 @@
+{
+  "name": "recruitment-management-system",
+  "version": "1.0.0",
+  "description": "Recruitment Management System (MERN Stack) with Light Theme",
+  "private": true,
+  "scripts": {
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run seed",
+    "build:client": "npm --prefix client run build"
+  },
+  "keywords": ["mern", "recruitment-management-system", "rms", "react", "node", "express", "mongodb"],
+  "license": "MIT"
+}

@@ -1,0 +1,32 @@
+# Dependencies and generated build output
+node_modules/
+client/node_modules/
+server/node_modules/
+client/dist/
+server/dist/
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+client/.env
+client/.env.*
+!client/.env.example
+server/.env
+server/.env.*
+!server/.env.example
+
+# Uploaded resumes and local logs
+server/uploads/resumes/*
+!server/uploads/resumes/.gitkeep
+*.log
+npm-debug.log*
+
+# Local editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local training report artifacts
+situ_report.*

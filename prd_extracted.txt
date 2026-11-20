@@ -1,0 +1,427 @@
+Product Requirements Document: Recruitment Management System (MERN)
+Derived from the Mechatron Lab industrial training report. Written so it can be handed directly to an AI coding agent (such as Antigravity) to generate the full project.
+1. Overview
+Product name: Recruitment Management System (RMS)
+One-line summary: A full-stack web application where recruiters post jobs and manage applicants, applicants build profiles, upload resumes and apply for jobs, and admins oversee the platform.
+Problem: Small and medium organizations manage hiring with emails, spreadsheets and paper records. This causes delayed hiring, poor candidate tracking, duplicate data and weak communication.
+Solution: A lightweight, secure, centralized platform covering the complete hiring workflow: job posting, applications, resume storage, status tracking and role-based dashboards.
+Tech stack (fixed):
+Frontend: React.js (Vite), Tailwind CSS, React Router, Axios, Context API for auth
+Backend: Node.js, Express.js (monolithic REST API)
+Database: MongoDB with Mongoose
+Auth: JWT and bcrypt, with role-based access control
+File uploads: Multer (resumes stored on server disk)
+Tools: Git/GitHub, Postman, MongoDB Compass
+2. Goals and Non-Goals
+Goals
+Responsive web app that works on desktop, tablet and mobile.
+Secure registration, login, logout and protected routes.
+Separate recruiter, applicant and admin dashboards.
+Full CRUD for job postings; job applications with status tracking.
+Resume upload with file type and size validation.
+Secure handling of candidate data (hashed passwords, validated uploads, rejected unauthorized access).
+Clean, modular, maintainable code (routes, controllers, models, middleware).
+Non-Goals (Future Work, do not build in v1)
+Email notifications
+Interview scheduling
+Resume parsing
+AI resume screening or candidate recommendation
+Recruitment analytics dashboards
+Video interview integration
+Mobile apps
+CI/CD pipeline and automated test suites (optional bonus only)
+3. User Roles
+Role
+Description
+Key permissions
+Applicant
+Job seeker
+Register, manage own profile, upload resume, browse and search jobs, apply, track own applications
+Recruiter
+Employer or HR user
+Create, edit and delete own jobs, view applicants for own jobs, view resumes, update application status
+Admin
+Platform administrator
+View and manage all users, jobs and applications; deactivate users; remove inappropriate jobs
+Admin accounts are created by seeding a script (not through public signup). Public registration allows only Applicant or Recruiter.
+4. Core User Flows
+Auth flow: User → Login → Express API (bcrypt credential check) → JWT issued → Role verification → Recruiter / Applicant / Admin dashboard → REST API → MongoDB → Logout
+Recruiter flow:
+Register or log in as a recruiter.
+Open Recruiter Dashboard and click Post New Job.
+Enter title, description, location, job type, required skills, deadline; publish.
+Open a job to view submitted applications and resumes.
+Update each application status: Applied → Under Review → Shortlisted → Selected / Rejected.
+Applicant flow:
+Register or log in as an applicant and complete the profile.
+Upload a resume (PDF, DOC or DOCX).
+Browse or search jobs and open a job to view details.
+Click Apply (with optional cover letter).
+Track the status of every application from the Applicant Dashboard.
+5. Functional Requirements
+5.1 Authentication and Authorization (FR-AUTH)
+FR-AUTH-1: Register with name, email, password, role (applicant or recruiter). Email must be unique.
+FR-AUTH-2: Passwords hashed with bcrypt (salt rounds 10 or more). Never return the hash in any API response.
+FR-AUTH-3: Login with email and password; return a signed JWT (expiry 1 day) plus basic user info.
+FR-AUTH-4: Logout clears the token on the client (stateless JWT).
+FR-AUTH-5: protect middleware verifies the JWT; invalid or expired tokens return 401.
+FR-AUTH-6: authorizeRoles(...roles) middleware returns 403 for wrong roles.
+FR-AUTH-7: Frontend ProtectedRoute component redirects unauthenticated users to login and wrong-role users to their own dashboard.
+FR-AUTH-8: Deactivated users (admin action) cannot log in.
+5.2 Job Management (FR-JOB)
+FR-JOB-1: Recruiters create jobs: title, description, location, jobType (Full-time, Part-time, Internship, Contract, Remote), skills[], deadline, status (Open or Closed).
+FR-JOB-2: Recruiters edit, delete or close only their own jobs (ownership check).
+FR-JOB-3: Public/applicant job listing with pagination (default 10 per page).
+FR-JOB-4: Search by keyword (title, description, skills) and filter by location, jobType and status.
+FR-JOB-5: Job detail page showing full job info and an Apply button for applicants.
+FR-JOB-6: Jobs past their deadline are shown as closed and cannot receive new applications.
+FR-JOB-7: Recruiter dashboard lists own jobs with applicant counts.
+5.3 Candidate Profile Management (FR-PROF)
+FR-PROF-1: Each applicant has one profile (1:1 with user): phone, education, skills[], experience, resumeUrl.
+FR-PROF-2: Applicant can create and update their profile at any time.
+FR-PROF-3: Recruiters can view the profile of an applicant who applied to one of their jobs.
+FR-PROF-4: Collect only required fields (data minimization).
+5.4 Resume Upload (FR-RES)
+FR-RES-1: Accept only PDF, DOC and DOCX (validate MIME type and extension).
+FR-RES-2: Maximum file size 2 MB; reject larger files with a clear error.
+FR-RES-3: Store with a randomized unique filename (never trust the original filename) in server/uploads/resumes/.
+FR-RES-4: Save the resume URL on the profile and on the application.
+FR-RES-5: Resume files are viewable only by the owning applicant, the recruiter of the job applied to, and admins.
+5.5 Applications (FR-APP)
+FR-APP-1: Applicant applies to an open job with an optional cover letter; the resume URL is taken from the upload or profile.
+FR-APP-2: An applicant cannot apply to the same job twice (unique compound index on job + applicant).
+FR-APP-3: Applicant sees all their applications with job title, company/recruiter, applied date and current status.
+FR-APP-4: Recruiter sees all applications for each of their jobs, with applicant name, profile details, resume link, cover letter and status.
+FR-APP-5: Recruiter can update status among: Applied, Under Review, Shortlisted, Selected, Rejected. Only the job's own recruiter can do this.
+FR-APP-6: Applicant may withdraw an application while the status is Applied.
+5.6 Admin Controls (FR-ADMIN)
+FR-ADMIN-1: List all users with role filter and search; activate or deactivate users; delete users.
+FR-ADMIN-2: List all jobs and applications; delete any job.
+FR-ADMIN-3: Basic platform counts (total users, jobs, applications) on the admin home page.
+5.7 UI and Responsiveness (FR-UI)
+Reusable React components styled with Tailwind; consistent look across the app.
+Mobile-first responsive layout (navbar collapses to a hamburger menu on small screens).
+Loading states, empty states and toast notifications for success and error messages.
+Client-side form validation matching server-side validation.
+6. Data Model (MongoDB / Mongoose)
+Four main collections linked through references. All schemas use timestamps: true.
+users
+Field
+Type
+Notes
+_id
+ObjectId
+PK
+name
+String
+required
+email
+String
+required, unique, lowercase
+passwordHash
+String
+required, select: false
+role
+String
+enum: recruiter, applicant, admin
+isActive
+Boolean
+default true
+createdAt
+Date
+auto
+profiles (1:1 with users)
+Field
+Type
+Notes
+user
+ObjectId → users
+required, unique
+phone
+String
+education
+String
+skills
+[String]
+experience
+String
+resumeUrl
+String
+jobs (users 1:N jobs)
+Field
+Type
+Notes
+title
+String
+required
+description
+String
+required
+location
+String
+required
+jobType
+String
+enum: Full-time, Part-time, Internship, Contract, Remote
+skills
+[String]
+deadline
+Date
+required
+recruiter
+ObjectId → users
+required
+status
+String
+enum: Open, Closed; default Open
+applications (jobs 1:N applications; users 1:N applications)
+Field
+Type
+Notes
+job
+ObjectId → jobs
+required
+applicant
+ObjectId → users
+required
+resumeUrl
+String
+required
+coverLetter
+String
+optional
+status
+String
+enum: Applied, Under Review, Shortlisted, Selected, Rejected; default Applied
+appliedAt
+Date
+default now
+Indexes: unique on users.email; unique compound on applications(job, applicant); text index on jobs(title, description, skills).
+7. REST API Specification
+Base URL: /api. All responses are JSON. Errors use { success: false, message } with proper HTTP status codes (400, 401, 403, 404, 409, 500).
+Auth
+Method
+Endpoint
+Access
+Description
+POST
+/auth/register
+Public
+Register applicant or recruiter
+POST
+/auth/login
+Public
+Login, returns JWT
+GET
+/auth/me
+Authenticated
+Current user
+Profile
+Method
+Endpoint
+Access
+Description
+GET
+/profile/me
+Applicant
+Get own profile
+PUT
+/profile/me
+Applicant
+Create or update own profile
+POST
+/profile/resume
+Applicant
+Upload resume (multipart, field resume)
+GET
+/profile/:userId
+Recruiter, Admin
+View applicant profile (recruiters only if the applicant applied to their job)
+Jobs
+Method
+Endpoint
+Access
+Description
+GET
+/jobs
+Authenticated
+List jobs (?q=&location=&jobType=&status=&page=&limit=)
+GET
+/jobs/:id
+Authenticated
+Job detail
+POST
+/jobs
+Recruiter
+Create job
+PUT
+/jobs/:id
+Recruiter (owner)
+Update job
+DELETE
+/jobs/:id
+Recruiter (owner), Admin
+Delete job
+GET
+/jobs/mine
+Recruiter
+Own jobs with applicant counts
+Applications
+Method
+Endpoint
+Access
+Description
+POST
+/applications/:jobId
+Applicant
+Apply to a job
+GET
+/applications/mine
+Applicant
+Own applications
+DELETE
+/applications/:id
+Applicant (owner)
+Withdraw (only while Applied)
+GET
+/applications/job/:jobId
+Recruiter (owner of job)
+Applications for a job
+PATCH
+/applications/:id/status
+Recruiter (owner of job)
+Update status
+Admin
+Method
+Endpoint
+Access
+Description
+GET
+/admin/stats
+Admin
+Counts of users, jobs, applications
+GET
+/admin/users
+Admin
+List users
+PATCH
+/admin/users/:id/active
+Admin
+Activate or deactivate user
+DELETE
+/admin/users/:id
+Admin
+Delete user
+GET
+/admin/jobs
+Admin
+List all jobs
+GET
+/admin/applications
+Admin
+List all applications
+8. Frontend Pages and Routes
+Route
+Page
+Access
+/
+Landing page with hero, features, login/register buttons
+Public
+/login
+Login form
+Public
+/register
+Registration form with role selector
+Public
+/jobs
+Job listing with search and filters
+Authenticated
+/jobs/:id
+Job details and Apply button
+Authenticated
+/applicant/dashboard
+Application list with status badges, quick stats
+Applicant
+/applicant/profile
+Profile form and resume upload
+Applicant
+/recruiter/dashboard
+Own jobs with applicant counts
+Recruiter
+/recruiter/jobs/new
+Post new job form
+Recruiter
+/recruiter/jobs/:id/edit
+Edit job form
+Recruiter
+/recruiter/jobs/:id/applications
+Applicant table, resume links, status dropdown
+Recruiter
+/admin/dashboard
+Stats, user management, job and application tables
+Admin
+*
+404 page
+Public
+Key shared components: Navbar, Footer, ProtectedRoute, JobCard, StatusBadge, FormInput, Modal, Spinner, Toast, Pagination, EmptyState.
+State management: AuthContext (user, token, login, logout) persisted in localStorage; Axios instance with an interceptor that attaches the Authorization: Bearer <token> header and redirects to login on 401.
+9. Project Structure
+recruitment-management-system/├── server/│   ├── config/db.js│   ├── controllers/   (auth, job, application, profile, admin)│   ├── middleware/    (auth.js, role.js, upload.js, errorHandler.js, validate.js)│   ├── models/        (User.js, Profile.js, Job.js, Application.js)│   ├── routes/        (authRoutes, jobRoutes, applicationRoutes, profileRoutes, adminRoutes)│   ├── uploads/resumes/│   ├── utils/         (generateToken.js, seedAdmin.js)│   ├── .env.example│   ├── app.js│   └── server.js└── client/    ├── src/    │   ├── api/axios.js    │   ├── context/AuthContext.jsx    │   ├── components/    │   ├── pages/ (public, applicant, recruiter, admin)    │   ├── routes/ProtectedRoute.jsx    │   ├── App.jsx    │   └── main.jsx    ├── tailwind.config.js    └── vite.config.js
+10. Non-Functional Requirements
+Security
+Passwords hashed with bcrypt; JWT secret from environment variables.
+Role-based route protection on both server and client; ownership checks on every job and application mutation.
+Input validation on all endpoints (express-validator or Joi); sanitize against NoSQL injection (express-mongo-sanitize).
+Use helmet, configure CORS to allow only CLIENT_URL, and add rate limiting on /auth/*.
+Resume upload restricted by type and size; randomized filenames; files served only through an authorized route, not as open static files.
+Never expose password hashes or stack traces in responses.
+Performance and Scalability
+Paginate all list endpoints; use .lean() for read queries and index search fields.
+Modular layered architecture so services can be split later.
+Usability and Compatibility
+Responsive on desktop, tablet and mobile; tested on Chrome (recommended), Firefox and Edge.
+Data Privacy
+Collect only required candidate fields and process them transparently, in line with data-protection principles such as India's DPDP Act 2023.
+Maintainability
+Consistent code style (ESLint and Prettier), meaningful commit history, README with setup steps.
+11. Environment and Setup
+Requirements: Node.js 20 LTS or above, MongoDB (local or Atlas), VS Code, Chrome.
+server/.env.example
+PORT=5000MONGO_URI=your_mongodb_connection_stringJWT_SECRET=your_secret_keyJWT_EXPIRES_IN=1dCLIENT_URL=http://localhost:5173ADMIN_EMAIL=admin@example.comADMIN_PASSWORD=change_me
+Run:
+cd server && npm install && npm run devcd client && npm install && npm run devnode server/utils/seedAdmin.js   # creates the first admin
+12. Acceptance Criteria
+The project is done when all of these pass:
+A user can register, log in and log out as applicant and as recruiter.
+Accessing a protected page without a valid token redirects to login; an API call with an invalid or expired token returns 401.
+An applicant cannot open recruiter or admin routes (403 on the API, redirect in the UI) and vice versa.
+A recruiter can create, edit, close and delete their own job, and cannot modify another recruiter's job.
+Applicants can search and filter jobs and view job details.
+Applicants can upload a PDF, DOC or DOCX resume under 2 MB; wrong types and oversized files are rejected with a clear message.
+An applicant can apply once per job; a duplicate application returns 409; a past-deadline job cannot be applied to.
+A recruiter sees applications for their job, opens the resume, and changes status; the applicant sees the new status on their dashboard.
+Passwords are stored only as hashes in MongoDB.
+Admin can view stats, deactivate a user (who then cannot log in) and delete jobs.
+UI is usable at 360 px, 768 px and 1280 px widths.
+Every endpoint in section 7 works in Postman with correct status codes.
+13. Suggested Build Phases (for the AI agent)
+Phase
+Scope
+1. Setup
+Repo, folder structure, Express app, MongoDB connection, Vite + Tailwind client, env files
+2. Auth
+User model, register/login/me, JWT and role middleware, AuthContext, ProtectedRoute, login and register pages
+3. Jobs
+Job model and CRUD API, search/filter/pagination, recruiter job forms, job list and detail pages
+4. Profile and Resume
+Profile model and API, Multer upload, applicant profile page
+5. Applications
+Application model and API, apply flow, status updates, applicant and recruiter dashboards
+6. Admin
+Admin APIs, seed script, admin dashboard
+7. Hardening and Polish
+Validation, helmet, CORS, rate limiting, error handler, toasts, responsive fixes, README, Postman collection
+14. Prompt to Give Antigravity
+Build the full-stack MERN application described in this PRD. Follow the folder structure in section 9 exactly. Implement the phases in section 13 in order, and after each phase run the app and confirm it works before moving on. Use Vite + React + Tailwind CSS on the frontend and Express + Mongoose on the backend. Implement every endpoint in section 7 with the validation, ownership checks and role rules from section 5. Do not build items listed under Non-Goals. At the end, generate a README with setup steps and a Postman collection, and verify every item in the acceptance criteria in section 12.
+15. Future Work (Out of Scope for v1)
+Interview scheduling, email notifications, resume parsing, advanced candidate search, recruitment analytics, additional admin roles (HR Manager, Department Head), AI-assisted candidate recommendation with human oversight and bias checks, video interview integration, mobile apps, and automated testing with CI/CD (e.g., GitHub Actions).
