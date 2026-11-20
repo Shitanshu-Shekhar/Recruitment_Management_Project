@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isDemoMode } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,18 +50,18 @@ const Navbar = () => {
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-1">
               <Link
-                to="/jobs"
+                to={isDemoMode ? '/demo-dashboard' : '/jobs'}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                  isActive('/jobs')
+                  isActive(isDemoMode ? '/demo-dashboard' : '/jobs')
                     ? 'text-indigo-600 bg-indigo-50 font-semibold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                Browse Jobs
+                {isDemoMode ? 'Demo Workspace' : 'Browse Jobs'}
               </Link>
 
               {/* Applicant links */}
-              {isAuthenticated && user?.role === 'applicant' && (
+              {!isDemoMode && isAuthenticated && user?.role === 'applicant' && (
                 <>
                   <Link
                     to="/applicant/dashboard"
@@ -87,7 +87,7 @@ const Navbar = () => {
               )}
 
               {/* Recruiter links */}
-              {isAuthenticated && user?.role === 'recruiter' && (
+              {!isDemoMode && isAuthenticated && user?.role === 'recruiter' && (
                 <>
                   <Link
                     to="/recruiter/dashboard"
@@ -114,7 +114,7 @@ const Navbar = () => {
               )}
 
               {/* Admin links */}
-              {isAuthenticated && user?.role === 'admin' && (
+              {!isDemoMode && isAuthenticated && user?.role === 'admin' && (
                 <Link
                   to="/admin/dashboard"
                   className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition ${
@@ -190,16 +190,16 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-2">
           <Link
-            to="/jobs"
+            to={isDemoMode ? '/demo-dashboard' : '/jobs'}
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-slate-50"
           >
-            Browse Jobs
+            {isDemoMode ? 'Demo Workspace' : 'Browse Jobs'}
           </Link>
 
           {isAuthenticated ? (
             <>
-              {user?.role === 'applicant' && (
+              {!isDemoMode && user?.role === 'applicant' && (
                 <>
                   <Link
                     to="/applicant/dashboard"
@@ -218,7 +218,7 @@ const Navbar = () => {
                 </>
               )}
 
-              {user?.role === 'recruiter' && (
+              {!isDemoMode && user?.role === 'recruiter' && (
                 <>
                   <Link
                     to="/recruiter/dashboard"
@@ -237,7 +237,7 @@ const Navbar = () => {
                 </>
               )}
 
-              {user?.role === 'admin' && (
+              {!isDemoMode && user?.role === 'admin' && (
                 <Link
                   to="/admin/dashboard"
                   onClick={() => setMobileMenuOpen(false)}

@@ -27,6 +27,7 @@ import JobApplications from './pages/recruiter/JobApplications';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import DemoDashboard from './pages/public/DemoDashboard';
 
 // Main Application Layout Shell
 const AppLayout = () => {
@@ -53,6 +54,9 @@ function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/demo-dashboard" element={<DemoDashboard />} />
+              </Route>
 
               {/* Authenticated routes (available to any logged in user) */}
               <Route element={<ProtectedRoute />}>

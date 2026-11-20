@@ -14,7 +14,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { register } = useAuth();
+  const { register, isDemoMode } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -47,13 +47,15 @@ const Register = () => {
       const res = await register(name, email, password, role);
       toast.success(`Account created successfully! Welcome, ${res.user.name}.`);
 
-      if (res.user.role === 'recruiter') {
+      if (isDemoMode) {
+        navigate('/demo-dashboard', { replace: true });
+      } else if (res.user.role === 'recruiter') {
         navigate('/recruiter/dashboard', { replace: true });
       } else {
         navigate('/applicant/dashboard', { replace: true });
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+      const msg = err.response?.data?.message || err.message || 'Registration failed. Please try again.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -78,6 +80,11 @@ const Register = () => {
         <p className="mt-1 text-center text-xs text-slate-500">
           Choose whether you are looking for jobs or hiring talent
         </p>
+        {isDemoMode && (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-800">
+            Presentation demo: accounts stay in this browser. Use a throwaway password.
+          </p>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

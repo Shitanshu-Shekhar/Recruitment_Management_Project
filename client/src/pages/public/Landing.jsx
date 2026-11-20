@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 
 const Landing = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isDemoMode } = useAuth();
 
   const getDashboardLink = () => {
+    if (isDemoMode) return '/demo-dashboard';
     if (!user) return '/jobs';
     if (user.role === 'admin') return '/admin/dashboard';
     if (user.role === 'recruiter') return '/recruiter/dashboard';
@@ -68,10 +69,10 @@ const Landing = () => {
                 </>
               )}
               <Link
-                to="/jobs"
+                to={isDemoMode ? '/demo-dashboard' : '/jobs'}
                 className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 rounded-xl text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition"
               >
-                Browse All Open Jobs
+                {isDemoMode ? 'View Demo Workspace' : 'Browse All Open Jobs'}
               </Link>
             </div>
 

@@ -11,7 +11,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, isAuthenticated, user, isDemoMode } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,15 +19,16 @@ const Login = () => {
   // If already authenticated, redirect to appropriate page
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirectPath =
-        user.role === 'admin'
+      const redirectPath = isDemoMode
+        ? '/demo-dashboard'
+        : user.role === 'admin'
           ? '/admin/dashboard'
           : user.role === 'recruiter'
           ? '/recruiter/dashboard'
           : '/applicant/dashboard';
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, isDemoMode, navigate]);
 
   // Check if redirected due to expired session
   useEffect(() => {
@@ -51,16 +52,17 @@ const Login = () => {
       const res = await login(email, password);
       toast.success(`Welcome back, ${res.user.name}!`);
 
-      const target =
-        res.user.role === 'admin'
+      const target = isDemoMode
+        ? '/demo-dashboard'
+        : res.user.role === 'admin'
           ? '/admin/dashboard'
           : res.user.role === 'recruiter'
           ? '/recruiter/dashboard'
           : '/applicant/dashboard';
 
-      navigate(target, { replace: true });
+      navigate(isDemoMode ? '/demo-dashboard' : target, { replace: true });
     } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Please check credentials.';
+      const msg = err.response?.data?.message || err.message || 'Login failed. Please check credentials.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -92,6 +94,11 @@ const Login = () => {
         <p className="mt-1 text-center text-xs text-slate-500">
           Enter your email and password to access your recruitment portal
         </p>
+        {isDemoMode && (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-800">
+            Presentation demo: accounts stay in this browser. Use a throwaway password.
+          </p>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
