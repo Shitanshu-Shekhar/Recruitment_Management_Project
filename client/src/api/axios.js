@@ -1,9 +1,12 @@
 import axios from 'axios';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL;
-const apiBaseUrl = configuredApiUrl
-  ? `${configuredApiUrl.startsWith('http') ? '' : 'https://'}${configuredApiUrl}`
+const normalizedApiUrl = configuredApiUrl
+  ? `${configuredApiUrl.startsWith('http') ? '' : 'https://'}${configuredApiUrl}`.replace(/\/+$/, '')
   : '/api';
+const apiBaseUrl = /\/api$/i.test(normalizedApiUrl)
+  ? normalizedApiUrl
+  : `${normalizedApiUrl}/api`;
 
 const api = axios.create({
   baseURL: apiBaseUrl,
